@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { ENVELOPE_VERSION } from "../version.js";
 import { SscError } from "../errors.js";
 import { redact } from "../security/redact.js";
+import { ENVELOPE_VERSION } from "../version.js";
 
 export interface EnvelopeMeta {
   credits_remaining?: number;
@@ -46,11 +46,7 @@ export function startRun(command: string): RunContext {
   };
 }
 
-export function ok<T>(
-  ctx: RunContext,
-  result: T,
-  meta: Partial<EnvelopeMeta> = {},
-): Envelope<T> {
+export function ok<T>(ctx: RunContext, result: T, meta: Partial<EnvelopeMeta> = {}): Envelope<T> {
   return {
     _v: ENVELOPE_VERSION,
     ok: true,

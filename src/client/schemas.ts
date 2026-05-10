@@ -42,7 +42,8 @@ const UrlSchema = z
   .url()
   .max(2048)
   .refine(isPublicHttpUrl, {
-    message: "url must be http(s) and resolve to a public host (no localhost / private IPs / non-http schemes)",
+    message:
+      "url must be http(s) and resolve to a public host (no localhost / private IPs / non-http schemes)",
   })
   .describe("Absolute http(s) URL on a public host.");
 
@@ -123,11 +124,7 @@ export const MatchInput = z.object({
 export type MatchInputT = z.infer<typeof MatchInput>;
 
 export const SearchInput = z.object({
-  country: z
-    .string()
-    .min(2)
-    .max(2)
-    .describe("Country code: nl, de, fr, uk, us."),
+  country: z.string().min(2).max(2).describe("Country code: nl, de, fr, uk, us."),
   keyword: z.string().min(1),
   page: z.number().int().min(1).default(1),
 });

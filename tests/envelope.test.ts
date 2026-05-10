@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fail, ok, startRun } from "../src/output/envelope.js";
 import { SscError } from "../src/errors.js";
+import { fail, ok, startRun } from "../src/output/envelope.js";
 import { ENVELOPE_VERSION } from "../src/version.js";
 
 const FAKE_KEY = "abcdef12-3456-7890-abcd-ef1234567890";

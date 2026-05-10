@@ -162,7 +162,10 @@ function parseJson<T>(text: string): T {
   try {
     return JSON.parse(text) as T;
   } catch {
-    throw new SscError("INVALID_RESPONSE", `upstream returned non-JSON body (${text.length} bytes)`);
+    throw new SscError(
+      "INVALID_RESPONSE",
+      `upstream returned non-JSON body (${text.length} bytes)`,
+    );
   }
 }
 

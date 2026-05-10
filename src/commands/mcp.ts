@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import type { Command } from "commander";
 import { runMcpServer } from "../mcp/server.js";
 
 export function registerMcp(program: Command): void {

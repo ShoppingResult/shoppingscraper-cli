@@ -2,16 +2,16 @@ import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { z } from "zod";
-import { resolveConfig } from "../config.js";
+import { ensureWithinCap } from "../budget/spendCap.js";
 import type { CallResult } from "../client/endpoints.js";
 import type { HttpClient } from "../client/http.js";
 import type { ToolName } from "../client/schemas.js";
 import { TOOL_META } from "../client/schemas.js";
-import { ensureWithinCap } from "../budget/spendCap.js";
+import { resolveConfig } from "../config.js";
+import { SscError } from "../errors.js";
 import { fail, ok, startRun } from "../output/envelope.js";
 import { writeJsonLine } from "../output/json.js";
-import { SscError } from "../errors.js";
-import { makeClient, parseGlobalOpts, type GlobalOpts } from "./runner.js";
+import { type GlobalOpts, makeClient, parseGlobalOpts } from "./runner.js";
 
 export interface StreamingOpts<S extends z.ZodTypeAny, O> {
   tool: ToolName;

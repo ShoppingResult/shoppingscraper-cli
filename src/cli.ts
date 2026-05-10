@@ -23,9 +23,10 @@ program
   )
   .version(VERSION, "-v, --version")
   .addOption(
-    new Option("--api-key <key>", "API key (prefer SSC_API_KEY env var; flag lands in shell history)").env(
-      "SSC_API_KEY",
-    ),
+    new Option(
+      "--api-key <key>",
+      "API key (prefer SSC_API_KEY env var; flag lands in shell history)",
+    ).env("SSC_API_KEY"),
   )
   .option("--pretty", "human-readable output instead of JSON envelope", false)
   .option("--quiet", "suppress stdout (only exit code)", false)

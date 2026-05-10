@@ -6,6 +6,7 @@ import {
   type Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { ensureWithinCap } from "../budget/spendCap.js";
 import * as endpoints from "../client/endpoints.js";
 import {
   BuyboxInput,
@@ -18,14 +19,13 @@ import {
   SearchInput,
   SubscriptionInput,
   TOOL_META,
-  VariantsInput,
   type ToolName,
+  VariantsInput,
 } from "../client/schemas.js";
-import { ensureWithinCap } from "../budget/spendCap.js";
+import { makeClient } from "../commands/runner.js";
 import { resolveConfig } from "../config.js";
 import { fail, ok, startRun } from "../output/envelope.js";
 import { redact, safeStringify } from "../security/redact.js";
-import { makeClient } from "../commands/runner.js";
 import { VERSION } from "../version.js";
 
 interface ToolEntry<I, O> {

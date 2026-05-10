@@ -1,7 +1,7 @@
-import { Command } from "commander";
+import type { Command } from "commander";
 import * as endpoints from "../client/endpoints.js";
 import { InfoInput } from "../client/schemas.js";
-import { runCommand, type GlobalOpts } from "./runner.js";
+import { type GlobalOpts, runCommand } from "./runner.js";
 import { runStreaming } from "./stream.js";
 
 export function registerInfo(program: Command): void {

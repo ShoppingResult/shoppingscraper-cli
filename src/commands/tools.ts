@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import type { Command } from "commander";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   BuyboxInput,
@@ -11,10 +11,10 @@ import {
   SearchInput,
   SubscriptionInput,
   TOOL_META,
-  VariantsInput,
   type ToolName,
+  VariantsInput,
 } from "../client/schemas.js";
-import { startRun, ok } from "../output/envelope.js";
+import { ok, startRun } from "../output/envelope.js";
 import { writeJson } from "../output/json.js";
 
 const SCHEMAS: Record<ToolName, import("zod").ZodType<unknown>> = {

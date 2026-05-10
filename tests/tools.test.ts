@@ -7,7 +7,18 @@ describe("listTools", () => {
   it("exposes every v1 command", () => {
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual(
-      ["buybox", "credits", "history", "info", "match", "offers", "page", "reviews", "search", "variants"].sort(),
+      [
+        "buybox",
+        "credits",
+        "history",
+        "info",
+        "match",
+        "offers",
+        "page",
+        "reviews",
+        "search",
+        "variants",
+      ].sort(),
     );
   });
 

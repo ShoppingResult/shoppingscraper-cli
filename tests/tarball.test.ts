@@ -30,10 +30,10 @@ describe.skipIf(!SHOULD_RUN)("npm tarball contents", () => {
   });
 
   it("source files contain no api_key=<value> literals", () => {
-    const result = execSync(
-      "grep -RE 'api_key=[A-Za-z0-9_-]{8,}' dist/ || true",
-      { cwd: new URL("..", import.meta.url), encoding: "utf8" },
-    );
+    const result = execSync("grep -RE 'api_key=[A-Za-z0-9_-]{8,}' dist/ || true", {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8",
+    });
     expect(result.trim()).toBe("");
   });
 });

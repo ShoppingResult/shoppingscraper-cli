@@ -1,6 +1,6 @@
 import pc from "picocolors";
-import type { Envelope } from "./envelope.js";
 import { redact } from "../security/redact.js";
+import type { Envelope } from "./envelope.js";
 
 /**
  * Minimal pretty printer. Not a full table renderer — just enough to make

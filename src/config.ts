@@ -73,7 +73,7 @@ export function resolveConfig(inputs: ConfigInputs = {}): ResolvedConfig {
   if (!apiKey) {
     throw new SscError(
       "AUTH_MISSING",
-      "No API key found. Set SSC_API_KEY environment variable or create ~/.config/ssc/config.json with {\"api_key\": \"...\"}. See https://app.shoppingscraper.com/apiguide",
+      'No API key found. Set SSC_API_KEY environment variable or create ~/.config/ssc/config.json with {"api_key": "..."}. See https://app.shoppingscraper.com/apiguide',
     );
   }
 

@@ -20,10 +20,8 @@ const UUID_PATTERN =
   /(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f])/gi;
 // Query-string-style key=value, ANY position in the string (not just after `?` or `&`).
 // Covers URL fragments, log lines, copy-pasted curl strings, and upstream error bodies.
-const QUERY_KEY_PATTERN =
-  /\b(api[_-]?key|apikey)=([^&\s"'<>;]+)/gi;
-const HEADER_KEY_PATTERN =
-  /\b(x-api-key|authorization|bearer)\s*[:=]\s*["']?([^"'\s,;<>]+)/gi;
+const QUERY_KEY_PATTERN = /\b(api[_-]?key|apikey)=([^&\s"'<>;]+)/gi;
+const HEADER_KEY_PATTERN = /\b(x-api-key|authorization|bearer)\s*[:=]\s*["']?([^"'\s,;<>]+)/gi;
 
 const REDACTED = "[REDACTED]";
 

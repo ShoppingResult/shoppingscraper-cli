@@ -1,4 +1,5 @@
-import { Command } from "commander";
+import type { Command } from "commander";
+import { ensureBatchCapPresent } from "../budget/spendCap.js";
 import * as endpoints from "../client/endpoints.js";
 import {
   BuyboxInput,
@@ -6,14 +7,13 @@ import {
   MatchInput,
   OffersInput,
   ReviewsInput,
-  VariantsInput,
   type ToolName,
+  VariantsInput,
 } from "../client/schemas.js";
-import { ensureBatchCapPresent } from "../budget/spendCap.js";
 import { fail, startRun } from "../output/envelope.js";
 import { writeJsonLine } from "../output/json.js";
+import { type GlobalOpts, parseGlobalOpts } from "./runner.js";
 import { runStreaming } from "./stream.js";
-import { parseGlobalOpts, type GlobalOpts } from "./runner.js";
 
 interface BatchOpts {
   input: string;
@@ -92,7 +92,12 @@ export function registerBatch(program: Command): void {
     if (!handler) {
       const ctx = startRun(`batch.${subcommand}`);
       writeJsonLine(
-        fail(ctx, new Error(`unknown batch subcommand: ${subcommand}. Supported: ${Object.keys(BATCH_HANDLERS).join(", ")}`)),
+        fail(
+          ctx,
+          new Error(
+            `unknown batch subcommand: ${subcommand}. Supported: ${Object.keys(BATCH_HANDLERS).join(", ")}`,
+          ),
+        ),
       );
       process.exitCode = 1;
       return;

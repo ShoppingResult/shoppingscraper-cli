@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../src/config.js";
-import { SscError } from "../src/errors.js";
+import type { SscError } from "../src/errors.js";
 
 describe("resolveConfig", () => {
   const orig = process.env.SSC_API_KEY;
   beforeEach(() => {
+    // `delete` is intentional — assigning `undefined` would coerce to the
+    // string "undefined" and pass my falsy check, breaking the AUTH_MISSING
+    // test below.
+    // biome-ignore lint/performance/noDelete: see comment above
     delete process.env.SSC_API_KEY;
   });
   afterEach(() => {

@@ -1,13 +1,13 @@
 import type { z } from "zod";
-import { HttpClient } from "../client/http.js";
-import type { CallResult } from "../client/endpoints.js";
-import type { ToolName } from "../client/schemas.js";
 import { ensureWithinCap } from "../budget/spendCap.js";
-import { resolveConfig, type ConfigInputs } from "../config.js";
+import type { CallResult } from "../client/endpoints.js";
+import { HttpClient } from "../client/http.js";
+import type { ToolName } from "../client/schemas.js";
+import { type ConfigInputs, resolveConfig } from "../config.js";
+import { SscError } from "../errors.js";
 import { fail, ok, startRun } from "../output/envelope.js";
 import { writeJson } from "../output/json.js";
 import { writePretty } from "../output/pretty.js";
-import { SscError } from "../errors.js";
 import { redactString } from "../security/redact.js";
 
 export interface GlobalOpts {

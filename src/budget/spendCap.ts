@@ -1,5 +1,5 @@
-import { SscError } from "../errors.js";
 import { TOOL_META, type ToolName } from "../client/schemas.js";
+import { SscError } from "../errors.js";
 
 /**
  * Local-only credit-spend guardrail. This is the *advisory* layer (codex's
@@ -18,11 +18,7 @@ export function estimateCost(tool: ToolName, count: number): number {
   return TOOL_META[tool].credits * count;
 }
 
-export function ensureWithinCap(
-  tool: ToolName,
-  count: number,
-  cap: number | null,
-): void {
+export function ensureWithinCap(tool: ToolName, count: number, cap: number | null): void {
   if (cap === null) return;
   const cost = estimateCost(tool, count);
   if (cost > cap) {
