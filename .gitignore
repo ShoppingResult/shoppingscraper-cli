@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.local.*
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# transient research artifacts (keyword research, etc.)
+results_*.json
+results_*.csv

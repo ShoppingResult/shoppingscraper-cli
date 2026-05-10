@@ -1,0 +1,15 @@
+tests/
+fixtures/
+src/
+.github/
+.changeset/
+.env
+.env.*
+*.local.*
+*.test.ts
+*.spec.ts
+biome.json
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+.gitignore

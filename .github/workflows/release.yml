@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  id-token: write   # required for npm provenance
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - name: typecheck
+        run: npx tsc --noEmit
+
+      - name: test
+        run: npm test
+
+      - name: build
+        run: npm run build
+
+      # ---------------------------------------------------------------
+      # Pre-publish secret tripwire — fails the job if any UUID-shaped
+      # string or `api_key=<value>` literal appears in the npm tarball.
+      # ---------------------------------------------------------------
+      - name: tarball secret tripwire
+        run: |
+          set -euo pipefail
+          npm pack --dry-run --json > /tmp/pack.json
+          npm pack
+          tarball=$(ls *.tgz | head -1)
+          mkdir -p /tmp/tarball
+          tar -xzf "$tarball" -C /tmp/tarball
+          if grep -RE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' /tmp/tarball/package; then
+            echo "::error::UUID-shaped string found in tarball — possible API key leak."
+            exit 1
+          fi
+          if grep -RE 'api[_-]?key=[A-Za-z0-9_-]{8,}' /tmp/tarball/package; then
+            echo "::error::api_key=<value> literal found in tarball."
+            exit 1
+          fi
+          if grep -RE 'sk-[A-Za-z0-9_-]{20,}|ssc_[A-Za-z0-9_-]{20,}' /tmp/tarball/package; then
+            echo "::error::API-key-like prefix found in tarball."
+            exit 1
+          fi
+          echo "tarball clean."
+
+      - name: changesets — version + publish
+        uses: changesets/action@v1
+        with:
+          publish: npm publish --provenance --access public
+          version: npm run version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

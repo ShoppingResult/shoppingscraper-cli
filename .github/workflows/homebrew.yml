@@ -1,0 +1,18 @@
+name: Homebrew tap bump
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: bump shoppingscraper/homebrew-tap
+        uses: dawidd6/action-homebrew-bump-formula@v3
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          tap: shoppingscraper/homebrew-tap
+          formula: ssc
+          tag: ${{ github.event.release.tag_name }}
+          revision: ${{ github.sha }}
