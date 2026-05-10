@@ -12,6 +12,10 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      # Surface NPM_TOKEN at the job level so step-level `if` conditions can
+      # reference it. `secrets.*` is not allowed in step-level `if:` context.
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,17 +69,16 @@ jobs:
       # this step is silently skipped so the rest of the workflow (typecheck,
       # tests, build, tarball tripwire) still gates every push to main.
       - name: changesets — version + publish
-        if: ${{ secrets.NPM_TOKEN != '' }}
+        if: env.NPM_TOKEN != ''
         uses: changesets/action@v1
         with:
           publish: npm publish --provenance --access public
           version: npm run version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: publish skipped notice
-        if: ${{ secrets.NPM_TOKEN == '' }}
+        if: env.NPM_TOKEN == ''
         run: |
           echo "::notice::NPM_TOKEN not configured — skipping npm publish."
           echo "To enable: create the @shoppingscraper npm org, generate an"
