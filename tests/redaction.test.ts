@@ -17,6 +17,21 @@ describe("redactString", () => {
     expect(redactString(`?api-key=${FAKE_KEY}`)).toContain("api-key=[REDACTED]");
   });
 
+  it("strips api_key= even without leading ? or & (e.g. logged mid-string)", () => {
+    expect(redactString(`request failed: api_key=${FAKE_KEY} dropped`)).toContain(
+      "api_key=[REDACTED]",
+    );
+    expect(redactString(`request failed: api_key=${FAKE_KEY} dropped`)).not.toContain(FAKE_KEY);
+  });
+
+  it("strips api_key= followed by a non-UUID-shaped value (forward compat)", () => {
+    const opaque = "ssckey_AbCdEf0123456789ZZZ";
+    const out = redactString(`/path?api_key=${opaque}&site=amazon.de`);
+    expect(out).toContain("api_key=[REDACTED]");
+    expect(out).not.toContain(opaque);
+    expect(out).toContain("site=amazon.de");
+  });
+
   it("strips bare UUIDs", () => {
     expect(redactString(`leaked: ${FAKE_KEY} done`)).toBe("leaked: [REDACTED] done");
   });

@@ -7,9 +7,14 @@ import { z } from "zod";
  * file gets a new schema pair and the rest follows.
  */
 
+// Marketplace identifier. Either a hostname (`amazon.de`, `shopping.google.nl`)
+// or the literal `global`. Restricted to letters/digits/dots/hyphens to prevent
+// path-injection / query-injection through this field.
 const SiteSchema = z
   .string()
   .min(1)
+  .max(128)
+  .regex(/^(?:global|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+)$/i)
   .describe(
     "Marketplace site identifier. Examples: shopping.google.nl, amazon.de, bol.com, coolblue.be, global",
   );
@@ -19,8 +24,66 @@ const EanSchema = z
   .regex(/^\d{8,14}$/u)
   .describe("EAN/GTIN/UPC, 8-14 digits.");
 
-const SkuSchema = z.string().min(1).describe("Marketplace-specific SKU/catalog ID.");
-const UrlSchema = z.string().url().describe("Absolute URL.");
+// SKU is provider-specific and can include hyphens, underscores, dots. We
+// reject control chars, whitespace, and characters that have meaning in URLs
+// or shells.
+const SkuSchema = z
+  .string()
+  .min(1)
+  .max(256)
+  .regex(/^[A-Za-z0-9._:\-]+$/)
+  .describe("Marketplace-specific SKU/catalog ID.");
+
+// URL must be http or https. We reject obvious abuse client-side (file://,
+// javascript:, data:, internal hostnames, RFC1918 IPs, link-local) — the
+// upstream API does its own validation, this is defense-in-depth.
+const UrlSchema = z
+  .string()
+  .url()
+  .max(2048)
+  .refine(isPublicHttpUrl, {
+    message: "url must be http(s) and resolve to a public host (no localhost / private IPs / non-http schemes)",
+  })
+  .describe("Absolute http(s) URL on a public host.");
+
+function isPublicHttpUrl(value: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+  const host = parsed.hostname.toLowerCase();
+  if (host === "" || host === "localhost") return false;
+  // RFC1918 / loopback / link-local / multicast / IPv6 special ranges
+  if (host === "0.0.0.0" || host === "::" || host === "::1") return false;
+  if (/^127\./.test(host)) return false;
+  if (/^10\./.test(host)) return false;
+  if (/^192\.168\./.test(host)) return false;
+  if (/^169\.254\./.test(host)) return false; // link-local incl. AWS/GCP/Azure metadata
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+  if (host.startsWith("[")) {
+    // IPv6 literal — reject anything inside fc00::/7 (ULA), fe80::/10 (LL),
+    // ::1 loopback. A conservative substring check is fine here.
+    const inner = host.slice(1, -1);
+    if (
+      inner === "::1" ||
+      inner === "::" ||
+      inner.startsWith("fc") ||
+      inner.startsWith("fd") ||
+      inner.startsWith("fe8") ||
+      inner.startsWith("fe9") ||
+      inner.startsWith("fea") ||
+      inner.startsWith("feb")
+    ) {
+      return false;
+    }
+  }
+  // Cloud-metadata hostnames
+  if (host === "metadata.google.internal" || host === "metadata") return false;
+  return true;
+}
 
 export const OffersInput = z.object({
   site: SiteSchema,

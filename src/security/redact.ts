@@ -18,15 +18,19 @@
 // negative-lookbehind/ahead on hex chars instead.
 const UUID_PATTERN =
   /(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f])/gi;
-const QUERY_KEY_PATTERN = /([?&](?:api[_-]?key))=([^&\s"']+)/gi;
-const HEADER_KEY_PATTERN = /\b(x-api-key|authorization)\s*[:=]\s*["']?([^"'\s,]+)/gi;
+// Query-string-style key=value, ANY position in the string (not just after `?` or `&`).
+// Covers URL fragments, log lines, copy-pasted curl strings, and upstream error bodies.
+const QUERY_KEY_PATTERN =
+  /\b(api[_-]?key|apikey)=([^&\s"'<>;]+)/gi;
+const HEADER_KEY_PATTERN =
+  /\b(x-api-key|authorization|bearer)\s*[:=]\s*["']?([^"'\s,;<>]+)/gi;
 
 const REDACTED = "[REDACTED]";
 
 export function redactString(input: string): string {
   return input
-    .replace(QUERY_KEY_PATTERN, `$1=${REDACTED}`)
-    .replace(HEADER_KEY_PATTERN, `$1: ${REDACTED}`)
+    .replace(QUERY_KEY_PATTERN, (_m, k) => `${k}=${REDACTED}`)
+    .replace(HEADER_KEY_PATTERN, (_m, k) => `${k}: ${REDACTED}`)
     .replace(UUID_PATTERN, REDACTED);
 }
 

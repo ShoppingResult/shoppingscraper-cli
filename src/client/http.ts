@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { Pool, request as undiciRequest } from "undici";
+import { Pool } from "undici";
 import { SscError } from "../errors.js";
-import { redactString } from "../security/redact.js";
+import { redact, redactString } from "../security/redact.js";
 import { USER_AGENT } from "../version.js";
 
 export interface HttpClientOptions {
@@ -167,7 +167,15 @@ function parseJson<T>(text: string): T {
 }
 
 function httpError(status: number, body: unknown, redactedUrl: string): SscError {
-  const message = extractMessage(body) ?? `upstream returned HTTP ${status}`;
+  // Upstream payloads can echo back our request URL (with `api_key=...`) or
+  // other secrets. Always redact before composing error messages.
+  const rawMessage = extractMessage(body) ?? `upstream returned HTTP ${status}`;
+  const message = redactString(rawMessage);
+  const safeDetails =
+    typeof body === "object" && body !== null
+      ? (redact(body) as Record<string, unknown>)
+      : undefined;
+
   if (status === 401 || status === 403) {
     return new SscError("AUTH_INVALID", `auth rejected by ${redactedUrl}: ${message}`, {
       httpStatus: status,
@@ -184,7 +192,7 @@ function httpError(status: number, body: unknown, redactedUrl: string): SscError
     return new SscError("SPEND_CAP_EXCEEDED", `payment required: ${message}`, {
       httpStatus: status,
       retryable: false,
-      details: typeof body === "object" && body !== null ? (body as Record<string, unknown>) : undefined,
+      details: safeDetails,
     });
   }
   if (status === 429) {
