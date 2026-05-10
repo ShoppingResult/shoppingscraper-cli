@@ -6,7 +6,9 @@
 [![CI](https://github.com/ShoppingResult/shoppingscraper-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/ShoppingResult/shoppingscraper-cli/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-Agent-friendly command-line tool for the [ShoppingScraper API](https://app.shoppingscraper.com/apiguide). Stable JSON envelope on every command, MCP server mode for Claude Desktop / Cursor / Code, ships with a `SKILL.md` so any LLM picks it up without schema wrapping.
+**🌐 Website:** [shoppingscraper.com](https://shoppingscraper.com) · **🔑 Get an API key:** [app.shoppingscraper.com](https://app.shoppingscraper.com) · **📖 API docs:** [apiguide](https://app.shoppingscraper.com/apiguide)
+
+Agent-friendly command-line tool for the [ShoppingScraper API](https://app.shoppingscraper.com/apiguide) by [shoppingscraper.com](https://shoppingscraper.com). Stable JSON envelope on every command, MCP server mode for Claude Desktop / Cursor / Code, ships with a `SKILL.md` so any LLM picks it up without schema wrapping.
 
 ## Why
 
@@ -206,6 +208,15 @@ node dist/cli.js --help
 
 See [SECURITY.md](./SECURITY.md). Found a vulnerability? Email security@shoppingscraper.com. Please do **not** open a public issue.
 
+## About ShoppingScraper
+
+`ssc` is built and maintained by **[ShoppingScraper](https://shoppingscraper.com)** — the e-commerce price-scraping API for Amazon, Google Shopping, Bol.com, Coolblue, and 30+ other marketplaces. EAN-precise, real-time, and built for AI agents.
+
+- 🌐 Website: **[shoppingscraper.com](https://shoppingscraper.com)**
+- 🔑 Get an API key: **[app.shoppingscraper.com](https://app.shoppingscraper.com)**
+- 📖 API docs: **[app.shoppingscraper.com/apiguide](https://app.shoppingscraper.com/apiguide)**
+- 📨 Contact: hello@shoppingscraper.com
+
 ## License
 
-MIT
+MIT — © [ShoppingScraper](https://shoppingscraper.com)
