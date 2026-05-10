@@ -3,7 +3,7 @@
 > **Price scraper CLI** for Amazon, Google Shopping, Bol.com, and Coolblue. Scrape prices, offers, buy-box winners, variants, and reviews from your terminal — or wire it into Claude Desktop / Cursor / Claude Code as a native MCP tool.
 
 [![npm version](https://img.shields.io/npm/v/@shoppingscraper/cli.svg)](https://www.npmjs.com/package/@shoppingscraper/cli)
-[![CI](https://github.com/tachnology/shoppingscraper-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/tachnology/shoppingscraper-cli/actions/workflows/ci.yml)
+[![CI](https://github.com/ShoppingResult/shoppingscraper-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/ShoppingResult/shoppingscraper-cli/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 Agent-friendly command-line tool for the [ShoppingScraper API](https://app.shoppingscraper.com/apiguide). Stable JSON envelope on every command, MCP server mode for Claude Desktop / Cursor / Code, ships with a `SKILL.md` so any LLM picks it up without schema wrapping.
@@ -29,7 +29,7 @@ npx -y @shoppingscraper/cli credits
 npm install -g @shoppingscraper/cli
 
 # Or via Homebrew (post-launch)
-brew install shoppingscraper/tap/ssc
+brew install ShoppingResult/tap/ssc
 ```
 
 ## Quick start

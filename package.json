@@ -36,11 +36,11 @@
     "claude",
     "cursor"
   ],
-  "homepage": "https://github.com/tachnology/shoppingscraper-cli#readme",
-  "bugs": "https://github.com/tachnology/shoppingscraper-cli/issues",
+  "homepage": "https://github.com/ShoppingResult/shoppingscraper-cli#readme",
+  "bugs": "https://github.com/ShoppingResult/shoppingscraper-cli/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tachnology/shoppingscraper-cli.git"
+    "url": "git+https://github.com/ShoppingResult/shoppingscraper-cli.git"
   },
   "license": "MIT",
   "author": "ShoppingScraper",
