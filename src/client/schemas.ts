@@ -64,12 +64,16 @@ function isPublicHttpUrl(value: string): boolean {
   if (/^169\.254\./.test(host)) return false; // link-local incl. AWS/GCP/Azure metadata
   if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
   if (host.startsWith("[")) {
-    // IPv6 literal — reject anything inside fc00::/7 (ULA), fe80::/10 (LL),
-    // ::1 loopback. A conservative substring check is fine here.
-    const inner = host.slice(1, -1);
+    // IPv6 literal — reject loopback/ULA/link-local. Note that `URL`
+    // canonicalizes IPv4-mapped IPv6 (`::ffff:127.0.0.1`) to compressed hex
+    // form (`::ffff:7f00:1`), so we block the entire `::ffff:` prefix —
+    // there's no public-internet use case for v4-mapped IPv6 in user-supplied
+    // URLs and it's the documented SSRF bypass for prefix-only checks.
+    const inner = host.slice(1, -1).toLowerCase();
     if (
       inner === "::1" ||
       inner === "::" ||
+      inner.startsWith("::ffff:") ||
       inner.startsWith("fc") ||
       inner.startsWith("fd") ||
       inner.startsWith("fe8") ||

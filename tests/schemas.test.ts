@@ -68,6 +68,12 @@ describe("UrlSchema (via PageInput)", () => {
       "http://metadata.google.internal/",
       "http://[::1]/",
       "http://[::]/",
+      // IPv4-mapped IPv6 — must be rejected (CodeRabbit-flagged SSRF bypass)
+      "http://[::ffff:127.0.0.1]/",
+      "http://[::ffff:10.0.0.1]/",
+      "http://[::ffff:192.168.1.1]/",
+      "http://[::ffff:169.254.169.254]/",
+      "http://[::ffff:172.16.0.1]/",
     ]) {
       const r = PageInput.safeParse({ url });
       expect(r.success, `expected ${url} to fail`).toBe(false);
