@@ -60,7 +60,12 @@ jobs:
           fi
           echo "tarball clean."
 
+      # Publish step runs only when NPM_TOKEN is configured as a repo secret.
+      # Until the @shoppingscraper npm org exists and an NPM_TOKEN is added,
+      # this step is silently skipped so the rest of the workflow (typecheck,
+      # tests, build, tarball tripwire) still gates every push to main.
       - name: changesets — version + publish
+        if: ${{ secrets.NPM_TOKEN != '' }}
         uses: changesets/action@v1
         with:
           publish: npm publish --provenance --access public
@@ -68,3 +73,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: publish skipped notice
+        if: ${{ secrets.NPM_TOKEN == '' }}
+        run: |
+          echo "::notice::NPM_TOKEN not configured — skipping npm publish."
+          echo "To enable: create the @shoppingscraper npm org, generate an"
+          echo "automation token, then add it as a repo secret named NPM_TOKEN."
