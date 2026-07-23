@@ -130,7 +130,7 @@ Operational notes:
 - **Delivery is at-least-once**: a page you never ack is redelivered; the blocking form acks only after writing the results to stdout.
 - **Drain within ~6 hours**: completed results that are never collected are pruned. If the blocking form hits `--wait-timeout` (default 3600s), resume with `ssc offers results --ack`.
 - **Submit is non-idempotent**: reconcile against the `accepted` count instead of re-posting a timed-out submit.
-- **Key scopes**: offers needs `channel:google`, matching needs `channel:match`.
+- **Key scopes**: offers and matching both use `channel:google` — one key covers both.
 - `--application-id` isolates submissions/results per application on one key.
 
 ## Output format

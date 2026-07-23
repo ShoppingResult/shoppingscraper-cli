@@ -146,8 +146,8 @@ export function subscriptionHistory(
  * HttpClient via `channelBase: true`.
  *
  * `kind` picks the pipeline: "offers" = Google Shopping offers
- * (/v2/channel/google/*, key scope channel:google), "match" = catalog
- * matching (/v2/channel/match/*, key scope channel:match).
+ * (/v2/channel/google/*), "match" = catalog matching (/v2/channel/match/*).
+ * Both paths use the same key scope, channel:google.
  */
 export type ChannelKind = "offers" | "match";
 
