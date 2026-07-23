@@ -1,5 +1,11 @@
 # @shoppingscraper/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- `ssc --version` (and the User-Agent) now derive from package.json instead of a hardcoded constant; 0.2.0 incorrectly reported itself as 0.1.0.
+
 ## 0.2.0
 
 ### Minor Changes

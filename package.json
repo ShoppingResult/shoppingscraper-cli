@@ -1,6 +1,6 @@
 {
   "name": "@shoppingscraper/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Price scraper CLI for Amazon, Google Shopping, Bol.com, and Coolblue. Scrape prices, offers, buy-box, variants, and reviews from your terminal. Stable JSON envelope, MCP server for Claude Desktop / Cursor / Code, ships with a SKILL.md.",
   "keywords": [
     "price-scraper",
