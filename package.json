@@ -72,6 +72,7 @@
     "lint": "biome check src tests",
     "format": "biome format --write src tests",
     "typecheck": "tsc --noEmit",
+    "version": "changeset version",
     "prepublishOnly": "npm run build && npm test && npm run lint"
   },
   "dependencies": {
