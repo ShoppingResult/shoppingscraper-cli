@@ -1,6 +1,10 @@
 import type { HttpClient, HttpResponse } from "./http.js";
 import type {
   BuyboxInputT,
+  ChannelAckInputT,
+  ChannelResultsInputT,
+  ChannelStatusInputT,
+  ChannelSubmitInputT,
   HistoryInputT,
   InfoInputT,
   MatchInputT,
@@ -134,4 +138,120 @@ export function subscriptionHistory(
   input: HistoryInputT,
 ): Promise<CallResult<unknown>> {
   return callApp(client, "/subscription/history", { limit: input.limit });
+}
+
+/**
+ * Channel API (enterprise.shoppingscraper.com). Async pipeline:
+ * submit → status → results → ack. Header auth (X-API-Key) is handled by
+ * HttpClient via `channelBase: true`.
+ *
+ * `kind` picks the pipeline: "offers" = Google Shopping offers
+ * (/v2/channel/google/*, key scope channel:google), "match" = catalog
+ * matching (/v2/channel/match/*, key scope channel:match).
+ */
+export type ChannelKind = "offers" | "match";
+
+function channelRoot(kind: ChannelKind): string {
+  return kind === "offers" ? "/v2/channel/google" : "/v2/channel/match";
+}
+
+async function callChannel<T>(
+  client: HttpClient,
+  method: "GET" | "POST",
+  path: string,
+  query: Record<string, string | number | boolean | undefined> = {},
+  body?: unknown,
+): Promise<CallResult<T>> {
+  const res = await client.request<T>({ method, path, query, body, channelBase: true });
+  const credits = extractCredits(res);
+  return {
+    data: res.data,
+    ...(credits.remaining !== undefined ? { creditsRemaining: credits.remaining } : {}),
+    ...(credits.spent !== undefined ? { creditsSpent: credits.spent } : {}),
+  };
+}
+
+export interface ChannelSubmitResponse {
+  accepted: number;
+  deduplicated?: number;
+  rejected: { ean: string; reason: string }[];
+}
+
+export interface ChannelStatusResponse {
+  queued: number;
+  claimed: number;
+  done: number;
+  failed: number;
+}
+
+export interface ChannelResultEntry {
+  ean: string;
+  country: string;
+  status: "done" | "failed";
+  [k: string]: unknown;
+}
+
+export interface ChannelResultsResponse {
+  results: ChannelResultEntry[];
+  page_token?: string;
+  remaining_estimate?: number;
+  pending?: number | boolean;
+}
+
+export function channelSubmit(
+  client: HttpClient,
+  kind: ChannelKind,
+  input: ChannelSubmitInputT,
+): Promise<CallResult<ChannelSubmitResponse>> {
+  // Offers submit lives at /google/offers; match submit is the bare /match root.
+  const path = kind === "offers" ? `${channelRoot(kind)}/offers` : channelRoot(kind);
+  return callChannel(
+    client,
+    "POST",
+    path,
+    {},
+    {
+      country: input.country,
+      items: input.items,
+      ...(input.max_pages !== undefined ? { max_pages: input.max_pages } : {}),
+      ...(input.application_id !== undefined ? { application_id: input.application_id } : {}),
+    },
+  );
+}
+
+export function channelStatus(
+  client: HttpClient,
+  kind: ChannelKind,
+  input: ChannelStatusInputT = {},
+): Promise<CallResult<ChannelStatusResponse>> {
+  return callChannel(client, "GET", `${channelRoot(kind)}/status`, {
+    application_id: input.application_id,
+  });
+}
+
+export function channelResults(
+  client: HttpClient,
+  kind: ChannelKind,
+  input: ChannelResultsInputT,
+): Promise<CallResult<ChannelResultsResponse>> {
+  return callChannel(client, "GET", `${channelRoot(kind)}/results`, {
+    limit: input.limit,
+    application_id: input.application_id,
+  });
+}
+
+export function channelAck(
+  client: HttpClient,
+  kind: ChannelKind,
+  input: ChannelAckInputT,
+): Promise<CallResult<{ acked: number }>> {
+  return callChannel(
+    client,
+    "POST",
+    `${channelRoot(kind)}/ack`,
+    {},
+    {
+      page_token: input.page_token,
+    },
+  );
 }

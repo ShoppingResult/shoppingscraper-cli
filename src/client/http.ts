@@ -8,6 +8,7 @@ export interface HttpClientOptions {
   apiKey: string;
   baseUrl: string;
   appBaseUrl: string;
+  channelBaseUrl: string;
   timeoutMs: number;
   retries: number;
 }
@@ -17,6 +18,12 @@ export interface RequestOptions {
   path: string;
   /** Use the app.shoppingscraper.com base instead of api.shoppingscraper.com */
   appBase?: boolean;
+  /**
+   * Use the enterprise.shoppingscraper.com channel base. The channel API
+   * authenticates via the `X-API-Key` header instead of the `?api_key=`
+   * query parameter used by the legacy hosts.
+   */
+  channelBase?: boolean;
   query?: Record<string, string | number | boolean | undefined>;
   body?: unknown;
   /** Per-call override (rare). */
@@ -43,15 +50,26 @@ export class HttpClient {
   }
 
   async request<T>(opts: RequestOptions): Promise<HttpResponse<T>> {
-    const base = opts.appBase ? this.options.appBaseUrl : this.options.baseUrl;
-    const url = this.buildUrl(base, opts.path, opts.query);
+    const base = opts.channelBase
+      ? this.options.channelBaseUrl
+      : opts.appBase
+        ? this.options.appBaseUrl
+        : this.options.baseUrl;
+    const url = this.buildUrl(base, opts.path, opts.query, opts.channelBase === true);
     const method = opts.method ?? "GET";
     const timeout = opts.timeoutMs ?? this.options.timeoutMs;
 
     let lastErr: unknown;
     for (let attempt = 0; attempt <= this.options.retries; attempt++) {
       try {
-        return await this.attempt<T>(base, url, method, opts.body, timeout);
+        return await this.attempt<T>(
+          base,
+          url,
+          method,
+          opts.body,
+          timeout,
+          opts.channelBase === true,
+        );
       } catch (err) {
         lastErr = err;
         if (!shouldRetry(err) || attempt === this.options.retries) {
@@ -75,12 +93,14 @@ export class HttpClient {
     method: string,
     body: unknown,
     timeoutMs: number,
+    headerAuth: boolean,
   ): Promise<HttpResponse<T>> {
     const pool = this.poolFor(base);
     const headers: Record<string, string> = {
       "user-agent": USER_AGENT,
       accept: "application/json",
     };
+    if (headerAuth) headers["x-api-key"] = this.options.apiKey;
     let payload: string | undefined;
     if (body !== undefined && body !== null) {
       headers["content-type"] = "application/json";
@@ -142,11 +162,13 @@ export class HttpClient {
     base: string,
     path: string,
     query?: Record<string, string | number | boolean | undefined>,
+    headerAuth = false,
   ): string {
     const u = new URL(path, base.endsWith("/") ? base : `${base}/`);
-    // ShoppingScraper API key is sent as a query-string parameter to match
-    // the deployed API contract and existing customer integrations.
-    u.searchParams.set("api_key", this.options.apiKey);
+    // Legacy hosts authenticate via `?api_key=` to match the deployed API
+    // contract. The channel host authenticates via the X-API-Key header
+    // (set in attempt()) and must NOT receive the key in the URL.
+    if (!headerAuth) u.searchParams.set("api_key", this.options.apiKey);
     if (query) {
       for (const [k, v] of Object.entries(query)) {
         if (v === undefined || v === null) continue;

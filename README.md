@@ -63,10 +63,14 @@ ssc batch offers --input eans.txt --site amazon.de --max-spend-credits 500
 |---|---|---|
 | `ssc credits` | Show remaining credits + plan info | 0 |
 | `ssc history` | Recent API calls for this key | 0 |
-| `ssc offers --site --ean` | All seller offers for an EAN | 1 |
+| `ssc offers --country --input` | Google Shopping offers via the channel API (async batch, up to 50k EANs) | 1 per EAN |
+| `ssc offers --site --ean` | All seller offers for an EAN (Amazon / Bol.com, legacy sync) | 1 |
+| `ssc offers submit\|status\|results\|ack` | Raw channel-pipeline steps for script-driven collection | 1 per EAN (submit) |
 | `ssc info --site --ean` | Product title, brand, images, specs | 1 |
 | `ssc buybox --site --ean` | Current buy-box winner + price | 1 |
-| `ssc match --site --ean [--deepsearch]` | EAN → marketplace SKU/URL | 1 / 4 |
+| `ssc match --country --input` | Google catalog matching via the channel API (catalog_id + title) | 1 per EAN |
+| `ssc match --site --ean [--deepsearch]` | EAN → SKU/URL (Amazon / Bol.com, legacy sync) | 1 / 4 |
+| `ssc match submit\|status\|results\|ack` | Raw channel-pipeline steps for matching | 1 per EAN (submit) |
 | `ssc search --country --keyword` | Google Shopping search | 1 |
 | `ssc page --url` | Structured data from any product URL | 1 |
 | `ssc variants --site --sku` | Variants for a Google Shopping SKU ⚠ | 6 |
@@ -93,6 +97,41 @@ ssc batch buybox --input eans.txt --site amazon.de --max-spend-credits 200
 ```
 
 `ssc batch` **requires** `--max-spend-credits N` — there is no default. This is deliberate: agents bypassing this flag is the highest-blast-radius mistake an MCP-driven workflow can make.
+
+## Channel API (Google Shopping)
+
+Google Shopping offers and matching run through the **channel API** on `enterprise.shoppingscraper.com` — an async batch pipeline instead of one HTTP request per EAN. `ssc offers` / `ssc match` for other sites keep the legacy sync endpoints, which now serve **Amazon and Bol.com only** (Coolblue, Idealo, and the rest were dropped from these two commands).
+
+The blocking form wraps the whole pipeline (submit → poll → drain → ack) and streams NDJSON, one envelope per product:
+
+```bash
+# Up to 50,000 EANs in one run; 1 credit per EAN
+ssc offers --country nl --input eans.txt --max-spend-credits 5000
+
+# Single EAN, catalog matching (returns catalog_id + title, no offers)
+ssc match --country de --ean 5055986110651
+
+# Input lines can also be NDJSON objects; a feed title roughly doubles match rate
+# {"ean":"5055986110651","title":"Monstershop T-mech Garten Anhängewalze"}
+```
+
+For big batches or cron-driven collection, drive the raw steps yourself:
+
+```bash
+ssc offers submit --country nl --input eans.txt --max-spend-credits 50000
+ssc offers status                       # {queued, claimed, done, failed}
+ssc offers results --ack                # one page (max 1000), acked after printing
+ssc offers ack --page-token <token>     # manual ack if you collected without --ack
+```
+
+Operational notes:
+
+- **Billing is unchanged**: 1 EAN = 1 credit, billed at submit.
+- **Delivery is at-least-once**: a page you never ack is redelivered; the blocking form acks only after writing the results to stdout.
+- **Drain within ~6 hours**: completed results that are never collected are pruned. If the blocking form hits `--wait-timeout` (default 3600s), resume with `ssc offers results --ack`.
+- **Submit is non-idempotent**: reconcile against the `accepted` count instead of re-posting a timed-out submit.
+- **Key scopes**: offers needs `channel:google`, matching needs `channel:match`.
+- `--application-id` isolates submissions/results per application on one key.
 
 ## Output format
 
@@ -128,7 +167,7 @@ Resolution order:
 2. `SSC_API_KEY` environment variable (recommended)
 3. `~/.config/ssc/config.json` with `{"api_key": "..."}` (mode 0600 recommended)
 
-The CLI sends the key as a query-string parameter (`?api_key=...`) to match the deployed ShoppingScraper API contract. All URLs are redacted before they appear in logs, error envelopes, or `meta.request_id`.
+The CLI sends the key as a query-string parameter (`?api_key=...`) to the legacy hosts (`api.` / `app.shoppingscraper.com`), matching the deployed ShoppingScraper API contract. The channel API host (`enterprise.shoppingscraper.com`) authenticates with the `X-API-Key` header instead — the key never appears in channel URLs. All URLs and header values are redacted before they appear in logs, error envelopes, or `meta.request_id`.
 
 ## MCP — Model Context Protocol
 
@@ -186,11 +225,20 @@ const client = new HttpClient({
   apiKey: cfg.apiKey,
   baseUrl: cfg.baseUrl,
   appBaseUrl: cfg.appBaseUrl,
+  channelBaseUrl: cfg.channelBaseUrl,
   timeoutMs: 30_000,
   retries: 2,
 });
+// Legacy sync (Amazon / Bol.com)
 const r = await endpoints.offers(client, { site: "amazon.de", ean: "0190198001281" });
 console.log(r.creditsRemaining, r.data);
+
+// Channel API (Google Shopping): submit → status → results → ack
+const sub = await endpoints.channelSubmit(client, "offers", {
+  country: "nl",
+  items: ["0190198001281"],
+});
+console.log(sub.data.accepted, sub.data.rejected);
 await client.close();
 ```
 

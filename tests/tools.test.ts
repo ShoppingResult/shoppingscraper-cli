@@ -4,7 +4,7 @@ import { listTools } from "../src/commands/tools.js";
 describe("listTools", () => {
   const tools = listTools();
 
-  it("exposes every v1 command", () => {
+  it("exposes every command including the channel pipeline steps", () => {
     const names = tools.map((t) => t.name).sort();
     expect(names).toEqual(
       [
@@ -18,8 +18,24 @@ describe("listTools", () => {
         "reviews",
         "search",
         "variants",
+        "offers_submit",
+        "offers_status",
+        "offers_results",
+        "offers_ack",
+        "match_submit",
+        "match_status",
+        "match_results",
+        "match_ack",
       ].sort(),
     );
+  });
+
+  it("flags channel submits as requires_confirmation (per-EAN billing)", () => {
+    for (const name of ["offers_submit", "match_submit"]) {
+      const t = tools.find((x) => x.name === name);
+      expect(t?.requires_confirmation, name).toBe(true);
+      expect(t?.credits, name).toBe(1);
+    }
   });
 
   it("prefixes MCP tool names with ssc_", () => {

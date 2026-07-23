@@ -8,6 +8,7 @@ export interface ResolvedConfig {
   source: "flag" | "env" | "file";
   baseUrl: string;
   appBaseUrl: string;
+  channelBaseUrl: string;
   timeoutMs: number;
   retries: number;
   concurrency: number;
@@ -20,6 +21,7 @@ export interface ConfigInputs {
   apiKey?: string | undefined;
   baseUrl?: string | undefined;
   appBaseUrl?: string | undefined;
+  channelBaseUrl?: string | undefined;
   timeoutMs?: number | undefined;
   retries?: number | undefined;
   concurrency?: number | undefined;
@@ -30,6 +32,7 @@ export interface ConfigInputs {
 
 const DEFAULT_BASE_URL = "https://api.shoppingscraper.com";
 const DEFAULT_APP_BASE_URL = "https://app.shoppingscraper.com";
+const DEFAULT_CHANNEL_BASE_URL = "https://enterprise.shoppingscraper.com";
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_RETRIES = 2;
 const DEFAULT_CONCURRENCY = 5;
@@ -43,6 +46,7 @@ interface FileConfig {
   api_key?: string;
   base_url?: string;
   app_base_url?: string;
+  channel_base_url?: string;
 }
 
 function readFileConfig(): FileConfig | null {
@@ -92,6 +96,11 @@ export function resolveConfig(inputs: ConfigInputs = {}): ResolvedConfig {
       process.env.SSC_APP_BASE_URL ??
       fileCfg?.app_base_url ??
       DEFAULT_APP_BASE_URL,
+    channelBaseUrl:
+      inputs.channelBaseUrl ??
+      process.env.SSC_CHANNEL_BASE_URL ??
+      fileCfg?.channel_base_url ??
+      DEFAULT_CHANNEL_BASE_URL,
     timeoutMs: inputs.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     retries: inputs.retries ?? DEFAULT_RETRIES,
     concurrency: inputs.concurrency ?? DEFAULT_CONCURRENCY,

@@ -41,6 +41,11 @@ program
   .addOption(new Option("--base-url <url>", "override API base URL (advanced)").env("SSC_BASE_URL"))
   .addOption(
     new Option("--app-base-url <url>", "override app base URL (advanced)").env("SSC_APP_BASE_URL"),
+  )
+  .addOption(
+    new Option("--channel-base-url <url>", "override channel API base URL (advanced)").env(
+      "SSC_CHANNEL_BASE_URL",
+    ),
   );
 
 registerCredits(program);

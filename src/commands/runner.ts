@@ -20,6 +20,7 @@ export interface GlobalOpts {
   maxSpendCredits?: string;
   baseUrl?: string;
   appBaseUrl?: string;
+  channelBaseUrl?: string;
 }
 
 export function parseGlobalOpts(opts: GlobalOpts): ConfigInputs {
@@ -29,6 +30,7 @@ export function parseGlobalOpts(opts: GlobalOpts): ConfigInputs {
   if (opts.quiet !== undefined) cfg.quiet = opts.quiet;
   if (opts.baseUrl !== undefined) cfg.baseUrl = opts.baseUrl;
   if (opts.appBaseUrl !== undefined) cfg.appBaseUrl = opts.appBaseUrl;
+  if (opts.channelBaseUrl !== undefined) cfg.channelBaseUrl = opts.channelBaseUrl;
   if (opts.timeout !== undefined) {
     const n = Number(opts.timeout);
     if (Number.isFinite(n) && n > 0) cfg.timeoutMs = n * 1000;
@@ -117,6 +119,7 @@ export function makeClient(cfg: ReturnType<typeof resolveConfig>): HttpClient {
     apiKey: cfg.apiKey,
     baseUrl: cfg.baseUrl,
     appBaseUrl: cfg.appBaseUrl,
+    channelBaseUrl: cfg.channelBaseUrl,
     timeoutMs: cfg.timeoutMs,
     retries: cfg.retries,
   });

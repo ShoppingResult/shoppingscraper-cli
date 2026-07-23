@@ -19,10 +19,31 @@ const SiteSchema = z
     "Marketplace site identifier. Examples: shopping.google.nl, amazon.de, bol.com, coolblue.be, global",
   );
 
+// Legacy synchronous /offers and /match only serve Amazon and Bol.com since
+// the channel-API migration. Google Shopping goes through the channel
+// pipeline (`--country` / submit-status-results-ack); all other sites were
+// dropped.
+const LegacySiteSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^(?:amazon\.[a-z]{2,3}(?:\.[a-z]{2})?|bol\.com)$/i, {
+    message:
+      "site must be amazon.<tld> or bol.com. Google Shopping moved to the channel API: use --country <cc> (or the submit/status/results/ack subcommands) instead of --site.",
+  })
+  .describe("Marketplace site identifier. Examples: amazon.de, amazon.co.uk, bol.com");
+
 const EanSchema = z
   .string()
   .regex(/^\d{8,14}$/u)
   .describe("EAN/GTIN/UPC, 8-14 digits.");
+
+// Two-letter Google Shopping market code for the channel API (nl, de, us, ...).
+const CountrySchema = z
+  .string()
+  .regex(/^[a-z]{2}$/i)
+  .transform((v) => v.toLowerCase())
+  .describe("Two-letter Google Shopping market code (e.g. nl, de, us).");
 
 // SKU is provider-specific and can include hyphens, underscores, dots. We
 // reject control chars, whitespace, and characters that have meaning in URLs
@@ -91,7 +112,7 @@ function isPublicHttpUrl(value: string): boolean {
 }
 
 export const OffersInput = z.object({
-  site: SiteSchema,
+  site: LegacySiteSchema,
   ean: EanSchema,
   availability: z.boolean().optional().describe("Filter to in-stock offers only."),
 });
@@ -112,7 +133,7 @@ export const BuyboxInput = z.object({
 export type BuyboxInputT = z.infer<typeof BuyboxInput>;
 
 export const MatchInput = z.object({
-  site: SiteSchema,
+  site: LegacySiteSchema,
   ean: EanSchema,
   deepsearch: z
     .boolean()
@@ -159,6 +180,89 @@ export const SubscriptionInput = z.object({});
 export type SubscriptionInputT = z.infer<typeof SubscriptionInput>;
 
 /**
+ * Channel API (enterprise.shoppingscraper.com) — async batch pipeline for
+ * Google Shopping offers and catalog matching. Workflow:
+ * submit → poll status → drain results (limit ≤ 1000) → ack each page.
+ * Results are at-least-once and pruned ~6h after completion if never acked.
+ */
+
+const ApplicationIdSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9._:\-]+$/)
+  .describe("Optional application scope: isolates submissions/results per application.");
+
+// A submit item is either a bare EAN string or an object with optional
+// catalog_id (skips product lookup) and title (feed name; roughly doubles
+// the match/offer rate).
+export const ChannelItemSchema = z.union([
+  EanSchema,
+  z.object({
+    ean: EanSchema,
+    catalog_id: z
+      .string()
+      .min(1)
+      .max(64)
+      .regex(/^[A-Za-z0-9._:\-]+$/)
+      .optional()
+      .describe("Google catalog identifier; skips product lookup when provided."),
+    title: z
+      .string()
+      .min(1)
+      .max(512)
+      .optional()
+      .describe("Product title from your feed; enables verification."),
+  }),
+]);
+export type ChannelItemT = z.infer<typeof ChannelItemSchema>;
+
+export const ChannelSubmitInput = z.object({
+  country: CountrySchema,
+  items: z
+    .array(ChannelItemSchema)
+    .min(1)
+    .max(50_000)
+    .describe("Up to 50,000 EANs (or {ean, catalog_id?, title?} objects) per submit."),
+  max_pages: z
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .optional()
+    .describe("Pagination depth per product (1-50); omit for the default."),
+  application_id: ApplicationIdSchema.optional(),
+});
+export type ChannelSubmitInputT = z.infer<typeof ChannelSubmitInput>;
+
+export const ChannelStatusInput = z.object({
+  application_id: ApplicationIdSchema.optional(),
+});
+export type ChannelStatusInputT = z.infer<typeof ChannelStatusInput>;
+
+export const ChannelResultsInput = z.object({
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(1000)
+    .default(1000)
+    .describe("Page size; 1000 is the recommended maximum."),
+  application_id: ApplicationIdSchema.optional(),
+});
+export type ChannelResultsInputT = z.infer<typeof ChannelResultsInput>;
+
+export const ChannelAckInput = z.object({
+  page_token: z
+    .string()
+    .min(1)
+    .max(512)
+    .regex(/^[A-Za-z0-9._:\-]+$/)
+    .describe("Cursor returned by /results; acking releases the page."),
+});
+export type ChannelAckInputT = z.infer<typeof ChannelAckInput>;
+
+/**
  * Per-tool credit cost + safety annotations. The MCP server reads this to
  * decorate tool descriptions and to refuse high-cost ops without an explicit
  * spend cap.
@@ -179,13 +283,65 @@ export type ToolName =
   | "variants"
   | "reviews"
   | "credits"
-  | "history";
+  | "history"
+  | "offers_submit"
+  | "offers_status"
+  | "offers_results"
+  | "offers_ack"
+  | "match_submit"
+  | "match_status"
+  | "match_results"
+  | "match_ack";
 
 export const TOOL_META: Record<ToolName, ToolMeta> = {
   offers: {
     credits: 1,
     requiresConfirmation: false,
-    description: "List all seller offers for an EAN on a marketplace.",
+    description: "List all seller offers for an EAN on Amazon or Bol.com (legacy sync endpoint).",
+  },
+  offers_submit: {
+    credits: 1,
+    requiresConfirmation: true,
+    description:
+      "Channel API: submit up to 50,000 EANs for Google Shopping offers in one country. Costs 1 credit PER EAN. Async: poll offers_status, drain offers_results, ack pages within ~6h.",
+  },
+  offers_status: {
+    credits: 0,
+    requiresConfirmation: false,
+    description: "Channel API: queued/claimed/done/failed counts for submitted offer jobs.",
+  },
+  offers_results: {
+    credits: 0,
+    requiresConfirmation: false,
+    description:
+      "Channel API: collect one page of finished offer results (max 1000). Ack each page or it is redelivered; unacked results are pruned ~6h after completion.",
+  },
+  offers_ack: {
+    credits: 0,
+    requiresConfirmation: false,
+    description: "Channel API: acknowledge a results page by page_token to release it.",
+  },
+  match_submit: {
+    credits: 1,
+    requiresConfirmation: true,
+    description:
+      "Channel API: submit up to 50,000 EANs for Google catalog matching (catalog_id + title, no offers). Costs 1 credit PER EAN. Async: poll match_status, drain match_results, ack pages.",
+  },
+  match_status: {
+    credits: 0,
+    requiresConfirmation: false,
+    description: "Channel API: queued/claimed/done/failed counts for submitted match jobs.",
+  },
+  match_results: {
+    credits: 0,
+    requiresConfirmation: false,
+    description:
+      "Channel API: collect one page of finished match results (max 1000). Ack each page or it is redelivered.",
+  },
+  match_ack: {
+    credits: 0,
+    requiresConfirmation: false,
+    description: "Channel API: acknowledge a match results page by page_token.",
   },
   info: {
     credits: 1,
@@ -201,7 +357,7 @@ export const TOOL_META: Record<ToolName, ToolMeta> = {
     credits: 1,
     requiresConfirmation: false,
     description:
-      "Match an EAN to a marketplace SKU/URL. Use --deepsearch (4 credits) only as fallback.",
+      "Match an EAN to an Amazon or Bol.com SKU/URL (legacy sync endpoint). Use --deepsearch (4 credits) only as fallback.",
   },
   search: {
     credits: 1,

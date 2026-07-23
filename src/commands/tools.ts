@@ -2,6 +2,10 @@ import type { Command } from "commander";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   BuyboxInput,
+  ChannelAckInput,
+  ChannelResultsInput,
+  ChannelStatusInput,
+  ChannelSubmitInput,
   HistoryInput,
   InfoInput,
   MatchInput,
@@ -28,6 +32,14 @@ const SCHEMAS: Record<ToolName, import("zod").ZodType<unknown>> = {
   reviews: ReviewsInput,
   credits: SubscriptionInput,
   history: HistoryInput,
+  offers_submit: ChannelSubmitInput,
+  offers_status: ChannelStatusInput,
+  offers_results: ChannelResultsInput,
+  offers_ack: ChannelAckInput,
+  match_submit: ChannelSubmitInput,
+  match_status: ChannelStatusInput,
+  match_results: ChannelResultsInput,
+  match_ack: ChannelAckInput,
 };
 
 interface ToolDescriptor {

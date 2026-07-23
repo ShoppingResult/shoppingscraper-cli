@@ -10,6 +10,10 @@ import { ensureWithinCap } from "../budget/spendCap.js";
 import * as endpoints from "../client/endpoints.js";
 import {
   BuyboxInput,
+  ChannelAckInput,
+  ChannelResultsInput,
+  ChannelStatusInput,
+  ChannelSubmitInput,
   HistoryInput,
   InfoInput,
   MatchInput,
@@ -55,6 +59,48 @@ const TOOLS: ToolEntry<unknown, unknown>[] = [
     name: "history",
     schema: HistoryInput,
     call: (c, i) => endpoints.subscriptionHistory(c, i as never),
+  },
+  // Channel API (async batch pipeline for Google Shopping). The MCP surface
+  // exposes the raw steps; the agent drives submit → status → results → ack.
+  {
+    name: "offers_submit",
+    schema: ChannelSubmitInput,
+    call: (c, i) => endpoints.channelSubmit(c, "offers", i as never),
+  },
+  {
+    name: "offers_status",
+    schema: ChannelStatusInput,
+    call: (c, i) => endpoints.channelStatus(c, "offers", i as never),
+  },
+  {
+    name: "offers_results",
+    schema: ChannelResultsInput,
+    call: (c, i) => endpoints.channelResults(c, "offers", i as never),
+  },
+  {
+    name: "offers_ack",
+    schema: ChannelAckInput,
+    call: (c, i) => endpoints.channelAck(c, "offers", i as never),
+  },
+  {
+    name: "match_submit",
+    schema: ChannelSubmitInput,
+    call: (c, i) => endpoints.channelSubmit(c, "match", i as never),
+  },
+  {
+    name: "match_status",
+    schema: ChannelStatusInput,
+    call: (c, i) => endpoints.channelStatus(c, "match", i as never),
+  },
+  {
+    name: "match_results",
+    schema: ChannelResultsInput,
+    call: (c, i) => endpoints.channelResults(c, "match", i as never),
+  },
+  {
+    name: "match_ack",
+    schema: ChannelAckInput,
+    call: (c, i) => endpoints.channelAck(c, "match", i as never),
   },
 ];
 
@@ -121,7 +167,10 @@ export async function runMcpServer(): Promise<void> {
     }
 
     try {
-      ensureWithinCap(tool.name, 1, cfg.maxSpendCredits);
+      // Channel submits bill per item, not per call — cap on the item count.
+      const items = (parsed.data as { items?: unknown[] }).items;
+      const count = Array.isArray(items) ? items.length : 1;
+      ensureWithinCap(tool.name, count, cfg.maxSpendCredits);
     } catch (err) {
       const env = fail(ctx, err);
       return {

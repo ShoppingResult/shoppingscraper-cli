@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { OffersInput, PageInput, VariantsInput } from "../src/client/schemas.js";
 
-describe("SiteSchema (via OffersInput)", () => {
-  it("accepts valid marketplace hostnames", () => {
-    for (const site of [
-      "amazon.de",
-      "amazon.co.uk",
-      "shopping.google.nl",
-      "bol.com",
-      "coolblue.be",
-      "global",
-    ]) {
+describe("LegacySiteSchema (via OffersInput)", () => {
+  it("accepts the remaining legacy sync sites (amazon.*, bol.com)", () => {
+    for (const site of ["amazon.de", "amazon.co.uk", "amazon.com", "bol.com"]) {
       const r = OffersInput.safeParse({ site, ean: "0190198001281" });
       expect(r.success, `expected ${site} to pass`).toBe(true);
+    }
+  });
+
+  it("rejects sites dropped in the channel-API migration", () => {
+    for (const site of ["shopping.google.nl", "coolblue.be", "idealo.de", "global"]) {
+      const r = OffersInput.safeParse({ site, ean: "0190198001281" });
+      expect(r.success, `expected ${site} to fail`).toBe(false);
     }
   });
 

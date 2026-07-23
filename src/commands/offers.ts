@@ -1,28 +1,60 @@
 import type { Command } from "commander";
 import * as endpoints from "../client/endpoints.js";
 import { OffersInput } from "../client/schemas.js";
+import {
+  type ChannelPipelineOpts,
+  registerChannelSubcommands,
+  runChannelPipeline,
+} from "./channel.js";
 import { type GlobalOpts, runCommand } from "./runner.js";
 import { runStreaming } from "./stream.js";
 
+interface OffersOpts extends ChannelPipelineOpts {
+  site?: string;
+  availability?: boolean;
+}
+
 export function registerOffers(program: Command): void {
-  program
+  const offers = program
     .command("offers")
-    .description("List all seller offers for an EAN on a marketplace")
-    .option("--site <site>", "marketplace site (e.g. amazon.de, bol.com, shopping.google.nl)")
+    .description(
+      "Seller offers per EAN. Google Shopping: channel API via --country (async batch, or the submit/status/results/ack subcommands). Amazon/Bol.com: legacy sync via --site.",
+    )
+    .option("--country <cc>", "Google Shopping market (channel API): nl, de, us, ...")
+    .option("--site <site>", "legacy sync site: amazon.<tld> or bol.com")
     .option("--ean <ean>", "EAN/GTIN (8-14 digits)")
-    .option("--availability", "filter to in-stock offers only", false)
-    .option("--input <path>", "read EANs (one per line) from file or - for stdin")
-    .action(async function (
-      this: Command,
-      opts: { site?: string; ean?: string; availability?: boolean; input?: string },
-    ) {
+    .option(
+      "--input <path>",
+      "file with EANs (one per line; channel also accepts NDJSON objects), - for stdin",
+    )
+    .option("--availability", "legacy only: filter to in-stock offers", false)
+    .option("--max-pages <n>", "channel only: pagination depth per product (1-50)")
+    .option("--application-id <id>", "channel only: application scope")
+    .option("--wait-timeout <seconds>", "channel only: max wait for collection (default 3600)")
+    .action(async function (this: Command, opts: OffersOpts) {
       const globalOpts = this.optsWithGlobals() as GlobalOpts;
+
+      if (opts.country) {
+        process.exitCode = await runChannelPipeline("offers", opts, globalOpts);
+        return;
+      }
+
+      if (!opts.site) {
+        process.stderr.write(
+          "Provide --country <cc> (Google Shopping, channel API) or --site amazon.<tld>|bol.com (legacy sync).\n",
+        );
+        process.exitCode = 1;
+        return;
+      }
+      if (/google/i.test(opts.site)) {
+        process.stderr.write(
+          "Google Shopping offers moved to the channel API. Use --country <cc> instead of --site, or drive the loop yourself with `ssc offers submit|status|results|ack`.\n",
+        );
+        process.exitCode = 1;
+        return;
+      }
+
       if (opts.input) {
-        if (!opts.site) {
-          process.stderr.write("--site is required when --input is used.\n");
-          process.exitCode = 1;
-          return;
-        }
         const code = await runStreaming({
           tool: "offers",
           input: opts.input,
@@ -44,4 +76,6 @@ export function registerOffers(program: Command): void {
       });
       process.exitCode = code;
     });
+
+  registerChannelSubcommands(offers, "offers");
 }
