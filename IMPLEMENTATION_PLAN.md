@@ -2,6 +2,11 @@
 
 Source: https://app.shoppingscraper.com/migration (fetched 2026-07-23)
 
+**Completed 2026-07-23 in commit `5e9fd15`** (all stages). Outstanding:
+real-key smoke test against enterprise.shoppingscraper.com (needs a key with
+`channel:google` + `channel:match` scopes) and the version bump before the
+next npm publish.
+
 ## Context
 
 The CLI currently calls synchronous `GET /offers` and `GET /match` on
