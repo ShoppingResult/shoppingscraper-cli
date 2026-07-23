@@ -13,3 +13,4 @@ coverage/
 # transient research artifacts (keyword research, etc.)
 results_*.json
 results_*.csv
+*.tgz
