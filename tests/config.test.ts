@@ -10,9 +10,13 @@ describe("resolveConfig", () => {
     // test below.
     // biome-ignore lint/performance/noDelete: see comment above
     delete process.env.SSC_API_KEY;
+    // Isolate from any real ~/.config/ssc/config.json on the dev machine.
+    process.env.SSC_CONFIG_PATH = "/nonexistent/ssc-test-config.json";
   });
   afterEach(() => {
     if (orig) process.env.SSC_API_KEY = orig;
+    // biome-ignore lint/performance/noDelete: env cleanup, see above
+    delete process.env.SSC_CONFIG_PATH;
   });
 
   it("flag wins over env", () => {

@@ -39,7 +39,9 @@ const DEFAULT_CONCURRENCY = 5;
 const DEFAULT_MAX_SPEND_CREDITS = 100;
 
 export function configPath(): string {
-  return join(homedir(), ".config", "ssc", "config.json");
+  // Overridable so tests (and multi-account setups) can point at a
+  // different file than the real ~/.config/ssc/config.json.
+  return process.env.SSC_CONFIG_PATH ?? join(homedir(), ".config", "ssc", "config.json");
 }
 
 interface FileConfig {
